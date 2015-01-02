@@ -3,22 +3,33 @@
  *
  */
 
-var TriangleBuffer = function(gl) {
+var Buffer = function(gl, vertices, item_size, num_items) {
+  this.gl = gl;
   this.vertex_buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, this.vertex_buffer);
-  this.vertices = [
-    0.0,   1.0, 0.0,
-    -1.0, -1.0, 0.0,
-    1.0,  -1.0, 0.0,
-  ];
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array(this.vertices),
-    gl.STATIC_DRAW
-  );
-  this.item_size = 3;
-  this.num_items = 3;
+  this.vertices = vertices;
+  this.item_size = item_size;
+  this.num_items = num_items;
 }
+
+Buffer.prototype.bind = function() {
+  this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertex_buffer);
+  this.gl.bufferData(
+    this.gl.ARRAY_BUFFER,
+    new Float32Array(this.vertices),
+    this.gl.STATIC_DRAW
+  );
+}
+
+/* Inherit from Buffer */
+var TriangleBuffer = function(gl, vertices) {
+  Buffer.call(this, gl, vertices, 3, 3);
+}
+TriangleBuffer.prototype = Object.create(Buffer.prototype);
+
+var TriangleStripBuffer = function(gl, vertices, numItems) {
+  Buffer.call(this, gl, vertices, 3, numItems);
+}
+TriangleStripBuffer.prototype = Object.create(Buffer.prototype);
 
 var ShaderCompiler = function(gl) {
   this.gl = gl;
@@ -53,10 +64,17 @@ var Renderer = function(canvas) {
 
   this.viewport_width = this.canvas.width;
   this.viewport_height = this.canvas.height;
-  this.triangle_buffers = [];
+
+  this.triangles = [];
+  this.triangle_strips = [];
 
   this.projection_matrix = mat4.create();
   this.model_matrix = mat4.create();
+
+  this.buffer_types = {
+    "triangle": this.gl.TRIANGLES,
+    "triangle_strip": this.gl.TRIANGLE_STRIP
+  }
 
   this.getShaderStrById = function(id) {
     var shader_str_elem = document.getElementById(id);
@@ -99,26 +117,50 @@ var Renderer = function(canvas) {
     );
   }
 
+  // Figure out how to make this non-dependent on the shader variable names
   this.setMatrixUniforms = function() {
     var pMatrixUniform = this.gl.getUniformLocation(
       this.shaderProgram,
       "uPMatrix"
     );
-
     var mvMatrixUniform = this.gl.getUniformLocation(
       this.shaderProgram,
       "uMVMatrix"
     )
+
+    // Set uPMatrix as this.projection_matrix
     this.gl.uniformMatrix4fv(
       pMatrixUniform, 
       false, 
       this.projection_matrix
     );
+
+    // Set uMVMatrix as this.model_matrix
     this.gl.uniformMatrix4fv(
       mvMatrixUniform,
       false,
       this.model_matrix
     );
+  }
+
+  this.draw_buffer = function(buffer, type) {
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer.vertex_buffer);
+    var vposition = this.gl.getAttribLocation(
+      this.shaderProgram,
+      "aVertexPosition"
+    )
+
+    this.gl.vertexAttribPointer(
+      vposition, 
+      buffer.item_size,
+      this.gl.FLOAT,
+      false,
+      0,
+      0
+    );
+
+    this.setMatrixUniforms();
+    this.gl.drawArrays(this.buffer_types[type], 0, buffer.num_items);
   }
 
   this.draw = function() {
@@ -138,38 +180,22 @@ var Renderer = function(canvas) {
     mat4.identity(this.model_matrix);
     mat4.translate(this.model_matrix, [-1.5, 0.0, -7.0]);
 
-    for (buffer_key in this.triangle_buffers) {
-      var buffer = this.triangle_buffers[buffer_key];
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer.vertex_buffer);
+    var triangle_buffer = new TriangleBuffer(this.gl, []);
+    for (triangle_key in this.triangles) {
+      var triangle = this.triangles[triangle_key];
+      triangle_buffer.vertices = triangle;
+      triangle_buffer.bind();
+      this.draw_buffer(triangle_buffer, "triangle");
+    }
 
-      var vposition = this.gl.getAttribLocation(
-        this.shaderProgram,
-        "aVertexPosition"
-      )
-
-      console.log(buffer);
-      this.gl.vertexAttribPointer(
-        vposition, 
-        buffer.item_size,
-        this.gl.FLOAT,
-        false,
-        0,
-        0
-      );
-
-      this.setMatrixUniforms();
-      this.gl.drawArrays(this.gl.TRIANGLES, 0, buffer.num_items);
+    mat4.translate(this.model_matrix, [3.0, 0.0, 0.0]);
+    var triangle_strip_buffer = new TriangleStripBuffer(this.gl, [], 0);
+    for (ts_key in this.triangle_strips) {
+      var ts = this.triangle_strips[ts_key];
+      triangle_strip_buffer.vertices = ts;
+      triangle_strip_buffer.num_items = ts.length / 3;
+      triangle_strip_buffer.bind();
+      this.draw_buffer(triangle_strip_buffer, "triangle_strip");
     }
   }
-}
-
-function start() {
-  var shader_ids = ["shader-fs", "shader-vs"]
-  var canvas = document.getElementById("webgl-canvas");
-  var render = new Renderer(canvas);
-
-  render.shader_ids = shader_ids;
-  render.setupShaders();
-  render.triangle_buffers = [new TriangleBuffer(render.gl)]
-  render.draw()
 }
