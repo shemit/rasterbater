@@ -20,6 +20,11 @@ Buffer.prototype.bind = function() {
   );
 }
 
+var ColorBuffer = function(gl, colors) {
+  Buffer.call(this, gl, colors, 4, colors.length/4);
+}
+ColorBuffer.prototype = Object.create(Buffer.prototype);
+
 /* Inherit from Buffer */
 var TriangleBuffer = function(gl, vertices) {
   Buffer.call(this, gl, vertices, 3, 3);
@@ -68,6 +73,8 @@ var Renderer = function(canvas) {
   this.triangles = [];
   this.triangle_strips = [];
 
+  this.vertex_colors = [];
+
   this.projection_matrix = mat4.create();
   this.model_matrix = mat4.create();
 
@@ -109,10 +116,19 @@ var Renderer = function(canvas) {
     this.gl.linkProgram(this.shaderProgram);
     this.gl.useProgram(this.shaderProgram);
 
+    // This can be made generic so that we can assign any variable within
+    // the shader
     this.gl.enableVertexAttribArray(
       this.gl.getAttribLocation(
         this.shaderProgram,
         "aVertexPosition"
+      )
+    );
+
+    this.gl.enableVertexAttribArray(
+      this.gl.getAttribLocation(
+        this.shaderProgram,
+        "aVertexColor"
       )
     );
   }
@@ -143,11 +159,11 @@ var Renderer = function(canvas) {
     );
   }
 
-  this.draw_buffer = function(buffer, type) {
+  this.draw_buffer = function(buffer, type, attribute) {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer.vertex_buffer);
     var vposition = this.gl.getAttribLocation(
       this.shaderProgram,
-      "aVertexPosition"
+      attribute
     )
 
     this.gl.vertexAttribPointer(
@@ -159,8 +175,10 @@ var Renderer = function(canvas) {
       0
     );
 
-    this.setMatrixUniforms();
-    this.gl.drawArrays(this.buffer_types[type], 0, buffer.num_items);
+    if (type != null) {
+      this.setMatrixUniforms();
+      this.gl.drawArrays(this.buffer_types[type], 0, buffer.num_items);
+    }
   }
 
   this.draw = function() {
@@ -180,12 +198,16 @@ var Renderer = function(canvas) {
     mat4.identity(this.model_matrix);
     mat4.translate(this.model_matrix, [-1.5, 0.0, -7.0]);
 
+    var triangle_color = new ColorBuffer(this.gl, this.vertex_colors[0]);
+    triangle_color.bind();
+    this.draw_buffer(triangle_color, null, "aVertexColor");
+
     var triangle_buffer = new TriangleBuffer(this.gl, []);
     for (triangle_key in this.triangles) {
       var triangle = this.triangles[triangle_key];
       triangle_buffer.vertices = triangle;
       triangle_buffer.bind();
-      this.draw_buffer(triangle_buffer, "triangle");
+      this.draw_buffer(triangle_buffer, "triangle", "aVertexPosition");
     }
 
     mat4.translate(this.model_matrix, [3.0, 0.0, 0.0]);
@@ -195,7 +217,9 @@ var Renderer = function(canvas) {
       triangle_strip_buffer.vertices = ts;
       triangle_strip_buffer.num_items = ts.length / 3;
       triangle_strip_buffer.bind();
-      this.draw_buffer(triangle_strip_buffer, "triangle_strip");
+      // this.draw_buffer(triangle_strip_buffer, "triangle_strip", "aVertexPosition");
     }
+
+
   }
 }

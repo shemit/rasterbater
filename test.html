@@ -4,19 +4,26 @@
   <title>Testing rasterbater.js</title>
   <script id="shader-fs" type="x-shader/x-fragment">
       precision mediump float;
+
+      varying vec4 vColor;
+
       void main(void) {
-          gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+          gl_FragColor = vColor;
       }
   </script>
 
   <script id="shader-vs" type="x-shader/x-vertex">
       attribute vec3 aVertexPosition;
+      attribute vec4 aVertexColor;
 
       uniform mat4 uMVMatrix;
       uniform mat4 uPMatrix;
 
+      varying vec4 vColor;
+
       void main(void) {
           gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+          vColor = aVertexColor;
       }
   </script>
   <script src="https://cloud.github.com/downloads/toji/gl-matrix/gl-matrix.1.3.7.min.js"></script>
@@ -29,6 +36,7 @@
       var shader_ids = ["shader-fs", "shader-vs"]
       var canvas = document.getElementById("webgl-canvas");
       var render = new Renderer(canvas);
+
       var triangle = [
         0.0, 1.0, 0.0,
         -1.0, -1.0, 0.0,
@@ -40,11 +48,17 @@
         1.0, -1.0, 0.0,
         -1.0, -1.0, 0.0
       ]
+      var triangle_color = [
+        1.0, 0.0, 0.0, 1.0,
+        0.0, 1.0, 0.0, 1.0,
+        0.0, 0.0, 1.0, 1.0
+      ]
 
       render.shader_ids = shader_ids;
       render.setupShaders();
       render.triangles = [triangle];
-      render.triangle_strips = [triangle_strip];
+      // render.triangle_strips = [triangle_strip];
+      render.vertex_colors = [triangle_color];
       render.draw();
     }
   </script>
