@@ -44,6 +44,14 @@ var ShaderCompiler = function(gl) {
   }
 }
 
+var Mesh = function() {
+  this.vertices = [];
+  this.vertex_colors = [];
+  this.rotation = [0, 0, 0];
+  this.scale = [0, 0, 0];
+  this.position = [0, 0, 0];
+}
+
 ShaderCompiler.prototype.compile = function(shader_str, shader_type) {
   var gl_shader_type = this.shader_types[shader_type];
   var shader = this.gl.createShader(gl_shader_type);
@@ -66,12 +74,16 @@ var Renderer = function(canvas) {
   this.gl = this.canvas.getContext("experimental-webgl");
   this.shaderProgram = this.gl.createProgram();
   this.shaderCompiler = new ShaderCompiler(this.gl);
+  this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+  this.gl.enable(this.gl.DEPTH_TEST);
 
   this.viewport_width = this.canvas.width;
   this.viewport_height = this.canvas.height;
 
   this.triangles = [];
   this.triangle_strips = [];
+
+  this.meshes = [];
 
   this.vertex_colors = [];
 
@@ -82,6 +94,7 @@ var Renderer = function(canvas) {
     "triangle": this.gl.TRIANGLES,
     "triangle_strip": this.gl.TRIANGLE_STRIP
   }
+  var _this = this;
 
   this.getShaderStrById = function(id) {
     var shader_str_elem = document.getElementById(id);
@@ -181,9 +194,74 @@ var Renderer = function(canvas) {
     }
   }
 
+  this.draw_triangles = function() {
+    var triangle_color = new ColorBuffer(this.gl, this.vertex_colors[0]);
+    triangle_color.bind();
+    this.draw_buffer(triangle_color, null, "aVertexColor");
+
+    var triangle_buffer = new TriangleBuffer(this.gl, []);
+    for (triangle_key in this.triangles) {
+      var triangle = this.triangles[triangle_key];
+      triangle_buffer.vertices = triangle;
+      triangle_buffer.bind();
+      this.draw_buffer(triangle_buffer, "triangle", "aVertexPosition");
+    }
+  }
+
+  this.draw_triangle_strips = function() {
+    // Put the color into the buffer
+    var triangle_strip_color = new ColorBuffer(this.gl, this.vertex_colors[1]);
+    triangle_strip_color.bind();
+    this.draw_buffer(triangle_strip_color, null, "aVertexColor");
+
+    // Put the triangle strip into the buffer
+    // mat4.translate(this.model_matrix, [3.0, 0.0, 0.0]);
+    var triangle_strip_buffer = new TriangleStripBuffer(this.gl, [], 0);
+    for (ts_key in this.triangle_strips) {
+      var ts = this.triangle_strips[ts_key];
+      triangle_strip_buffer.vertices = ts;
+      triangle_strip_buffer.num_items = ts.length / 3;
+      triangle_strip_buffer.bind();
+      this.draw_buffer(
+        triangle_strip_buffer,
+        "triangle_strip", 
+        "aVertexPosition"
+      );
+    }
+  }
+
+  this.draw_meshes = function() {
+    var triangle_strip_buffer = new TriangleStripBuffer(this.gl, [], 0);
+    for (m_key in this.meshes) {
+      var mesh = this.meshes[m_key];
+
+      mat4.translate(this.model_matrix, mesh.position);
+      var triangle_strip_color = new ColorBuffer(
+        this.gl, 
+        mesh.vertex_colors
+      );
+      triangle_strip_color.bind();
+      this.draw_buffer(triangle_strip_color, null, "aVertexColor");
+
+      triangle_strip_buffer.vertices = mesh.vertices;
+      
+      triangle_strip_buffer.num_items = mesh.vertices.length / 3;
+      triangle_strip_buffer.bind();
+
+      this.draw_buffer(
+        triangle_strip_buffer,
+        "triangle_strip", 
+        "aVertexPosition"
+      );
+
+    }
+  }
+
+  this.animate = function() {
+    
+  }
+
   this.draw = function() {
-    this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    this.gl.enable(this.gl.DEPTH_TEST);
     this.gl.viewport(0, 0, this.viewport_width, this.viewport_height);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
@@ -196,30 +274,26 @@ var Renderer = function(canvas) {
     )
 
     mat4.identity(this.model_matrix);
-    mat4.translate(this.model_matrix, [-1.5, 0.0, -7.0]);
+    // mat4.translate(this.model_matrix, [-1.5, 0.0, -7.0]);
 
-    var triangle_color = new ColorBuffer(this.gl, this.vertex_colors[0]);
-    triangle_color.bind();
-    this.draw_buffer(triangle_color, null, "aVertexColor");
+    // TODO: Create two basic file formats, one that holds the vertex
+    //       color information, and another that holds the point information
+    //       A JSON format should be fine.
+    //
+    //       A parser goes through these files, then generates a mesh based
+    //       off of triangles and triangle strips
+    this.draw_triangles();
+    this.draw_triangle_strips();
+    this.draw_meshes();
+  }
 
-    var triangle_buffer = new TriangleBuffer(this.gl, []);
-    for (triangle_key in this.triangles) {
-      var triangle = this.triangles[triangle_key];
-      triangle_buffer.vertices = triangle;
-      triangle_buffer.bind();
-      this.draw_buffer(triangle_buffer, "triangle", "aVertexPosition");
-    }
+  this.tick = function() {
+    requestAnimFrame(_this.tick);
+    _this.draw();
+    _this.animate();
+  }
 
-    mat4.translate(this.model_matrix, [3.0, 0.0, 0.0]);
-    var triangle_strip_buffer = new TriangleStripBuffer(this.gl, [], 0);
-    for (ts_key in this.triangle_strips) {
-      var ts = this.triangle_strips[ts_key];
-      triangle_strip_buffer.vertices = ts;
-      triangle_strip_buffer.num_items = ts.length / 3;
-      triangle_strip_buffer.bind();
-      // this.draw_buffer(triangle_strip_buffer, "triangle_strip", "aVertexPosition");
-    }
-
-
+  this.start = function() {
+    this.tick();
   }
 }
