@@ -67,6 +67,12 @@ ShaderCompiler.prototype.compile = function(shader_str, shader_type) {
   return shader;
 }
 
+var RasterbaterMath = {
+  "degrees_to_radians": function(degrees) {
+    return degrees * Math.PI / 180;
+  }
+}
+
 var Renderer = function(canvas) {
   this.shader_ids = [];
   this.canvas = canvas;
@@ -84,11 +90,13 @@ var Renderer = function(canvas) {
   this.triangle_strips = [];
 
   this.meshes = [];
+  this.model_matrix_stack = [];
 
   this.vertex_colors = [];
 
   this.projection_matrix = mat4.create();
   this.model_matrix = mat4.create();
+  this.previous_tick_time = 0.0;
 
   this.buffer_types = {
     "triangle": this.gl.TRIANGLES,
@@ -194,7 +202,7 @@ var Renderer = function(canvas) {
     }
   }
 
-  this.draw_triangles = function() {
+  this.draw_triangles = function(position, rotation, scale) {
     var triangle_color = new ColorBuffer(this.gl, this.vertex_colors[0]);
     triangle_color.bind();
     this.draw_buffer(triangle_color, null, "aVertexColor");
@@ -208,7 +216,7 @@ var Renderer = function(canvas) {
     }
   }
 
-  this.draw_triangle_strips = function() {
+  this.draw_triangle_strips = function(position, rotation, scale) {
     // Put the color into the buffer
     var triangle_strip_color = new ColorBuffer(this.gl, this.vertex_colors[1]);
     triangle_strip_color.bind();
@@ -230,12 +238,35 @@ var Renderer = function(canvas) {
     }
   }
 
+  this.push_matrix = function() {
+    var copy = mat4.create();
+    mat4.set(this.model_matrix, copy);
+    this.model_matrix_stack.push(copy);
+  }
+
+  this.pop_matrix = function() {
+    if (this.model_matrix_stack.length == 0) {
+      throw "Invalid popmatrix.";
+    }
+    this.model_matrix = this.model_matrix_stack.pop();
+  }
+
   this.draw_meshes = function() {
     var triangle_strip_buffer = new TriangleStripBuffer(this.gl, [], 0);
     for (m_key in this.meshes) {
       var mesh = this.meshes[m_key];
 
       mat4.translate(this.model_matrix, mesh.position);
+      this.push_matrix();
+
+      console.log(mesh.rotation[0]);
+
+      mat4.rotate(
+        this.model_matrix, 
+        RasterbaterMath.degrees_to_radians(mesh.rotation[0]), 
+        [1,0,0]
+      );
+
       var triangle_strip_color = new ColorBuffer(
         this.gl, 
         mesh.vertex_colors
@@ -253,12 +284,21 @@ var Renderer = function(canvas) {
         "triangle_strip", 
         "aVertexPosition"
       );
+      this.pop_matrix();
 
     }
   }
 
   this.animate = function() {
-    
+    var current_time = new Date().getTime();
+    if (this.previous_tick_time != 0) {
+      var elapsed = current_time - this.previous_tick_time;
+      for (m_key in this.meshes) {
+        var mesh = this.meshes[m_key];
+        mesh.rotation[0] += (90 * elapsed) / 1000.0;
+      }
+    }
+    this.previous_tick_time = current_time;
   }
 
   this.draw = function() {
@@ -274,14 +314,7 @@ var Renderer = function(canvas) {
     )
 
     mat4.identity(this.model_matrix);
-    // mat4.translate(this.model_matrix, [-1.5, 0.0, -7.0]);
 
-    // TODO: Create two basic file formats, one that holds the vertex
-    //       color information, and another that holds the point information
-    //       A JSON format should be fine.
-    //
-    //       A parser goes through these files, then generates a mesh based
-    //       off of triangles and triangle strips
     this.draw_triangles();
     this.draw_triangle_strips();
     this.draw_meshes();
