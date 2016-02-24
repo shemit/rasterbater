@@ -131,42 +131,6 @@ var Renderer = function(canvas) {
     }
   }
 
-  this.draw_triangles = function(position, rotation, scale) {
-    var triangle_color = new ColorBuffer(this.gl, this.vertex_colors[0]);
-    triangle_color.bind();
-    this.draw_buffer(triangle_color, null, "aVertexColor");
-
-    var triangle_buffer = new TriangleBuffer(this.gl, []);
-    for (triangle_key in this.triangles) {
-      var triangle = this.triangles[triangle_key];
-      triangle_buffer.vertices = triangle;
-      triangle_buffer.bind();
-      this.draw_buffer(triangle_buffer, "triangle", "aVertexPosition");
-    }
-  }
-
-  this.draw_triangle_strips = function(position, rotation, scale) {
-    // Put the color into the buffer
-    var triangle_strip_color = new ColorBuffer(this.gl, this.vertex_colors[1]);
-    triangle_strip_color.bind();
-    this.draw_buffer(triangle_strip_color, null, "aVertexColor");
-
-    // Put the triangle strip into the buffer
-    // mat4.translate(this.model_matrix, [3.0, 0.0, 0.0]);
-    var triangle_strip_buffer = new TriangleStripBuffer(this.gl, [], 0);
-    for (ts_key in this.triangle_strips) {
-      var ts = this.triangle_strips[ts_key];
-      triangle_strip_buffer.vertices = ts;
-      triangle_strip_buffer.num_items = ts.length / 3;
-      triangle_strip_buffer.bind();
-      this.draw_buffer(
-        triangle_strip_buffer,
-        "triangle_strip", 
-        "aVertexPosition"
-      );
-    }
-  }
-
   this.push_matrix = function() {
     var copy = mat4.create();
     mat4.set(this.model_matrix, copy);
@@ -212,7 +176,6 @@ var Renderer = function(canvas) {
         "aVertexPosition"
       );
       this.pop_matrix();
-
     }
   }
 
@@ -242,8 +205,6 @@ var Renderer = function(canvas) {
 
     mat4.identity(this.model_matrix);
 
-    this.draw_triangles();
-    this.draw_triangle_strips();
     this.draw_meshes();
   }
 
