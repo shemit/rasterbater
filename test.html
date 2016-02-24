@@ -32,66 +32,12 @@
   <!-- use this for offline coding -->
   <script src="lib/glMatrix.js"></script>
   <script src="lib/webgl-utils.js"></script>
+  <script src="src/rasterbater_math.js"></script>
   <script src="src/buffer.js"></script>
   <script src="src/shader_compiler.js"></script>
   <script src="src/mesh.js"></script>
+  <script src="src/renderer.js"></script>
   <script src="src/rasterbater.js"></script>
-  <script type="text/javascript">
-    function start () {
-      var shader_ids = ["shader-fs", "shader-vs"]
-      var canvas = document.getElementById("webgl-canvas");
-      var render = new Renderer(canvas);
-
-      var triangle = [
-        0.0, 1.0, 0.0,
-        -1.0, -1.0, 0.0,
-        1.0, -1.0, 0.0
-      ]
-
-      var triangle_strip = [
-        1.0, 1.0, 0.0,
-        -1.0, 1.0, 0.0,
-        1.0, -1.0, 0.0,
-        -1.0, -1.0, 0.0
-      ]
-
-      var triangle_color = [
-        1.0, 0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0, 1.0,
-        0.0, 0.0, 1.0, 1.0
-      ]
-
-      var triangle_strip_color = [
-        0.5, 0.5, 1.0, 1.0,
-        0.5, 0.5, 1.0, 1.0,
-        0.5, 0.5, 1.0, 1.0,
-        0.5, 0.5, 1.0, 1.0,
-      ]
-
-      var mesh = new Mesh();
-      mesh.vertices = [
-        0.0, 1.0, 0.0,
-        -1.0, -1.0, 0.0,
-        1.0, -1.0, 0.0
-      ]
-      mesh.vertex_colors = [
-        1.0, 0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0, 1.0,
-        0.0, 0.0, 1.0, 1.0
-      ]
-      mesh.position = [-1.5, 0.0, -7.0];
-
-      render.shader_ids = shader_ids;
-      render.setupShaders();
-      // render.triangles = [triangle];
-      // render.triangle_strips = [triangle_strip];
-      render.vertex_colors = [triangle_color, triangle_strip_color];
-      render.meshes = [mesh];
-      render.start();
-      // render.draw();
-
-    }
-  </script>
 </head>
 <body onload="start()">
 <canvas id="webgl-canvas" width="500" height="500"></canvas>
