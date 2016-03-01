@@ -45,8 +45,6 @@ function start () {
   var render = new Renderer(canvas);
   render.shader_ids = shader_ids;
   render.setupShaders();
-  // render.triangles = [triangle];
-  // render.triangle_strips = [triangle_strip];
   render.vertex_colors = [triangle_color, triangle_strip_color];
   render.meshes = [pyramid_mesh];
   render.start();

@@ -146,36 +146,75 @@ var Renderer = function(canvas) {
 
   this.draw_meshes = function() {
     var triangle_strip_buffer = new TriangleStripBuffer(this.gl, [], 0);
+    // TODO :: IMPLEMENT THE TRIANGLE BUFFER !!!!!!!
+    // TODO ::
+    // TODO ::
+
+
     for (m_key in this.meshes) {
       var mesh = this.meshes[m_key];
 
-      mat4.translate(this.model_matrix, mesh.position);
-      this.push_matrix();
+      if (mesh.vertex_indices) {
 
-      mat4.rotate(
-        this.model_matrix, 
-        RasterbaterMath.degrees_to_radians(mesh.rotation[0]), 
-        [1,0,0]
-      );
+        mat4.translate(this.model_matrix, mesh.position);
+        this.push_matrix();
 
-      var triangle_strip_color = new ColorBuffer(
-        this.gl, 
-        mesh.vertex_colors
-      );
-      triangle_strip_color.bind();
-      this.draw_buffer(triangle_strip_color, null, "aVertexColor");
+        mat4.rotate(
+          this.model_matrix, 
+          RasterbaterMath.degrees_to_radians(mesh.rotation[0]), 
+          [1,0,0]
+        );
 
-      triangle_strip_buffer.vertices = mesh.vertices;
-      
-      triangle_strip_buffer.num_items = mesh.vertices.length / 3;
-      triangle_strip_buffer.bind();
+        var triangle_color = new ColorBuffer(
+          this.gl, 
+          mesh.vertex_colors
+        );
+        triangle_color.bind();
+        this.draw_buffer(triangle_strip_color, null, "aVertexColor");
 
-      this.draw_buffer(
-        triangle_strip_buffer,
-        "triangle_strip", 
-        "aVertexPosition"
-      );
-      this.pop_matrix();
+        triangle_strip_buffer.vertices = mesh.vertices;
+        
+        triangle_strip_buffer.num_items = mesh.vertices.length / 3;
+        triangle_strip_buffer.bind();
+
+        this.draw_buffer(
+          triangle_strip_buffer,
+          "triangle_strip", 
+          "aVertexPosition"
+        );
+        this.pop_matrix();
+
+      } else {
+
+        mat4.translate(this.model_matrix, mesh.position);
+        this.push_matrix();
+
+        mat4.rotate(
+          this.model_matrix, 
+          RasterbaterMath.degrees_to_radians(mesh.rotation[0]), 
+          [1,0,0]
+        );
+
+        var triangle_strip_color = new ColorBuffer(
+          this.gl, 
+          mesh.vertex_colors
+        );
+        triangle_strip_color.bind();
+        this.draw_buffer(triangle_strip_color, null, "aVertexColor");
+
+        triangle_strip_buffer.vertices = mesh.vertices;
+        
+        triangle_strip_buffer.num_items = mesh.vertices.length / 3;
+        triangle_strip_buffer.bind();
+
+        this.draw_buffer(
+          triangle_strip_buffer,
+          "triangle_strip", 
+          "aVertexPosition"
+        );
+        this.pop_matrix();
+
+      }
     }
   }
 

@@ -30,6 +30,3 @@ var TriangleStripBuffer = function(gl, vertices, numItems) {
   Buffer.call(this, gl, vertices, 3, numItems);
 }
 TriangleStripBuffer.prototype = Object.create(Buffer.prototype);
-
-
-
