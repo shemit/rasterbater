@@ -7,129 +7,21 @@ var Renderer = function(canvas) {
   this.canvas = canvas;
 
   this.gl = this.canvas.getContext("experimental-webgl");
-  this.shaderProgram = this.gl.createProgram();
-  this.shaderCompiler = new ShaderCompiler(this.gl);
+  this.shaderManager = new ShaderManager(this.gl)
   this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
   this.gl.enable(this.gl.DEPTH_TEST);
 
   this.viewport_width = this.canvas.width;
   this.viewport_height = this.canvas.height;
 
-  this.triangles = [];
-  this.triangle_strips = [];
-
   this.meshes = [];
   this.model_matrix_stack = [];
-
-  this.vertex_colors = [];
 
   this.projection_matrix = mat4.create();
   this.model_matrix = mat4.create();
   this.previous_tick_time = 0.0;
 
-  this.buffer_types = {
-    "triangle": this.gl.TRIANGLES,
-    "triangle_strip": this.gl.TRIANGLE_STRIP
-  }
   var _this = this;
-
-  this.getShaderStrById = function(id) {
-    var shader_str_elem = document.getElementById(id);
-
-    var str = "";
-    var k = shader_str_elem.firstChild;
-    while(k) {
-      if (k.nodeType == 3) {
-        str += k.textContent;
-      }
-      k = k.nextSibling;
-    }
-
-    return str;
-  }
-
-  this.getShaderTypeById = function(id) {
-    var shader_str_elem = document.getElementById(id);
-    return shader_str_elem.type;
-  }
-
-  this.setupShaders = function() {
-    for (shader_key in this.shader_ids) {
-      var shader_id = this.shader_ids[shader_key];
-      var shader_str = this.getShaderStrById(shader_id);
-      var shader_type = this.getShaderTypeById(shader_id);
-
-      var shader = this.shaderCompiler.compile(shader_str, shader_type);
-      this.gl.attachShader(this.shaderProgram, shader);
-    }
-
-    this.gl.linkProgram(this.shaderProgram);
-    this.gl.useProgram(this.shaderProgram);
-
-    // This can be made generic so that we can assign any variable within
-    // the shader
-    this.gl.enableVertexAttribArray(
-      this.gl.getAttribLocation(
-        this.shaderProgram,
-        "aVertexPosition"
-      )
-    );
-
-    this.gl.enableVertexAttribArray(
-      this.gl.getAttribLocation(
-        this.shaderProgram,
-        "aVertexColor"
-      )
-    );
-  }
-
-  // Figure out how to make this non-dependent on the shader variable names
-  this.setMatrixUniforms = function() {
-    var pMatrixUniform = this.gl.getUniformLocation(
-      this.shaderProgram,
-      "uPMatrix"
-    );
-    var mvMatrixUniform = this.gl.getUniformLocation(
-      this.shaderProgram,
-      "uMVMatrix"
-    )
-
-    // Set uPMatrix as this.projection_matrix
-    this.gl.uniformMatrix4fv(
-      pMatrixUniform, 
-      false, 
-      this.projection_matrix
-    );
-
-    // Set uMVMatrix as this.model_matrix
-    this.gl.uniformMatrix4fv(
-      mvMatrixUniform,
-      false,
-      this.model_matrix
-    );
-  }
-
-  this.draw_buffer = function(buffer, type, attribute) {
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer.vertex_buffer);
-    var vposition = this.gl.getAttribLocation(
-      this.shaderProgram,
-      attribute
-    )
-
-    this.gl.vertexAttribPointer(
-      vposition, 
-      buffer.item_size,
-      this.gl.FLOAT,
-      false,
-      0,
-      0
-    );
-
-    if (type != null) {
-      this.setMatrixUniforms();
-      this.gl.drawArrays(this.buffer_types[type], 0, buffer.num_items);
-    }
-  }
 
   this.push_matrix = function() {
     var copy = mat4.create();
@@ -145,78 +37,77 @@ var Renderer = function(canvas) {
   }
 
   this.draw_meshes = function() {
-    var triangle_strip_buffer = new TriangleStripBuffer(this.gl, [], 0);
-    // TODO :: IMPLEMENT THE TRIANGLE BUFFER !!!!!!!
-    // TODO ::
-    // TODO ::
-
-
     for (m_key in this.meshes) {
       var mesh = this.meshes[m_key];
 
+      mat4.translate(this.model_matrix, mesh.position);
+      this.push_matrix();
+
+      mat4.rotate(
+        this.model_matrix, 
+        RasterbaterMath.degrees_to_radians(mesh.rotation[0]), 
+        [1,0,0]
+      );
+
+      var vert_pos_buffer = new TriangleBuffer(
+        this.gl,
+        mesh.vertices
+      );
+      vert_pos_buffer.bind();
+      this.shaderManager.bind_buffer_to_attr(
+        vert_pos_buffer,
+        "aVertexPosition",
+        this.gl.FLOAT
+      );
+
+      var vert_color_buffer = new ColorBuffer(
+        this.gl,
+        mesh.vertex_colors
+      )
+
+      vert_color_buffer.bind();
+      this.shaderManager.bind_buffer_to_attr(
+        vert_color_buffer,
+        "aVertexColor",
+        this.gl.FLOAT
+      );
+
+      this.shaderManager.setMatrixUniforms(
+        "uPMatrix",
+        this.projection_matrix
+      );
+
+      this.shaderManager.setMatrixUniforms(
+        "uMVMatrix",
+        this.model_matrix
+      );
+
+      // Handle meshes that include vertex_indices
       if (mesh.vertex_indices) {
-
-        mat4.translate(this.model_matrix, mesh.position);
-        this.push_matrix();
-
-        mat4.rotate(
-          this.model_matrix, 
-          RasterbaterMath.degrees_to_radians(mesh.rotation[0]), 
-          [1,0,0]
+        var vert_idx_buffer = new VertexIndexBuffer(
+          this.gl,
+          mesh.vertex_indices
         );
+        vert_idx_buffer.bind();
 
-        var triangle_color = new ColorBuffer(
-          this.gl, 
-          mesh.vertex_colors
+        this.gl.drawElements(
+          this.gl.TRIANGLES,
+          vert_idx_buffer.num_items,
+          this.gl.UNSIGNED_SHORT,
+          0
         );
-        triangle_color.bind();
-        this.draw_buffer(triangle_strip_color, null, "aVertexColor");
-
-        triangle_strip_buffer.vertices = mesh.vertices;
-        
-        triangle_strip_buffer.num_items = mesh.vertices.length / 3;
-        triangle_strip_buffer.bind();
-
-        this.draw_buffer(
-          triangle_strip_buffer,
-          "triangle_strip", 
-          "aVertexPosition"
-        );
-        this.pop_matrix();
-
-      } else {
-
-        mat4.translate(this.model_matrix, mesh.position);
-        this.push_matrix();
-
-        mat4.rotate(
-          this.model_matrix, 
-          RasterbaterMath.degrees_to_radians(mesh.rotation[0]), 
-          [1,0,0]
-        );
-
-        var triangle_strip_color = new ColorBuffer(
-          this.gl, 
-          mesh.vertex_colors
-        );
-        triangle_strip_color.bind();
-        this.draw_buffer(triangle_strip_color, null, "aVertexColor");
-
-        triangle_strip_buffer.vertices = mesh.vertices;
-        
-        triangle_strip_buffer.num_items = mesh.vertices.length / 3;
-        triangle_strip_buffer.bind();
-
-        this.draw_buffer(
-          triangle_strip_buffer,
-          "triangle_strip", 
-          "aVertexPosition"
-        );
-        this.pop_matrix();
-
       }
+      // Handle meshes that don't include vertex_indices
+      else {
+        this.gl.drawArrays(
+          this.gl.TRIANGLE_STRIP,
+          0,
+          vert_pos_buffer.num_items);
+      }
+      this.pop_matrix();
     }
   }
+
 
   this.animate = function() {
     var current_time = new Date().getTime();
@@ -253,7 +144,47 @@ var Renderer = function(canvas) {
     _this.animate();
   }
 
+  this.handleLoadedTexture = function(texture) {
+    this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+    this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
+    this.gl.texImage2D(
+      this.gl.TEXTURE_2D,
+      0,
+      this.gl.RGBA,
+      this.gl.RGBA,
+      this.gl.UNSIGNED_BYTE,
+      texture.image
+    );
+    this.gl.texParameteri(
+      this.gl.TEXTURE_2D,
+      this.gl.TEXTURE_MAC_FILTER,
+      this.gl.NEAREST
+    );
+    this.gl.texParameteri(
+      this.gl.TEXTURE_2D,
+      this.gl.TEXTURE_MIN_FILTER,
+      this.gl.NEAREST
+    );
+    this.gl.bindTexture(this.GL.TEXTURE_2D, null);
+  }
+  
+  this.load = function() {
+    for (mesh_key in this.meshes) {
+      var mesh = this.meshes[mesh_key];
+      if (mesh.texture_path) {
+        mesh.texture = this.gl.createTexture;
+        mesh.texture.image = new Image();
+        mesh.texture.image.onload(function() {
+          this.handleLoadedTexture(mesh.texture);
+        });
+
+        mesh.texture.image.src = mesh.texture_path;
+      }
+    }
+  }
+
   this.start = function() {
+    this.shaderManager.setupShaders();
     this.tick();
   }
 }
