@@ -48,6 +48,16 @@ var Renderer = function(canvas) {
         RasterbaterMath.degrees_to_radians(mesh.rotation[0]), 
         [1,0,0]
       );
+      mat4.rotate(
+        this.model_matrix, 
+        RasterbaterMath.degrees_to_radians(mesh.rotation[1]), 
+        [0,1,0]
+      );
+      mat4.rotate(
+        this.model_matrix, 
+        RasterbaterMath.degrees_to_radians(mesh.rotation[2]), 
+        [0,0,1]
+      );
 
       var vert_pos_buffer = new TriangleBuffer(
         this.gl,
@@ -142,7 +152,9 @@ var Renderer = function(canvas) {
       var elapsed = current_time - this.previous_tick_time;
       for (m_key in this.meshes) {
         var mesh = this.meshes[m_key];
-        mesh.rotation[0] += (90 * elapsed) / 1000.0;
+        for (var i = 0; i < mesh.rotation.length; i++) {
+          mesh.rotation[i] += (mesh.rotation_velocity[i] * elapsed) / 1000.0;
+        }
       }
     }
     this.previous_tick_time = current_time;
