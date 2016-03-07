@@ -45,15 +45,45 @@ var colors = [
     [0.0, 0.0, 1.0, 1.0]  // Left face
 ];
 
+txt_cube_mesh.texture_coords = [
+  // Front face
+  0.0, 0.0,
+  1.0, 0.0,
+  1.0, 1.0,
+  0.0, 1.0,
+
+  // Back face
+  1.0, 0.0,
+  1.0, 1.0,
+  0.0, 1.0,
+  0.0, 0.0,
+
+  // Top face
+  0.0, 1.0,
+  0.0, 0.0,
+  1.0, 0.0,
+  1.0, 1.0,
+
+  // Bottom face
+  1.0, 1.0,
+  0.0, 1.0,
+  0.0, 0.0,
+  1.0, 0.0,
+
+  // Right face
+  1.0, 0.0,
+  1.0, 1.0,
+  0.0, 1.0,
+  0.0, 0.0,
+
+  // Left face
+  0.0, 0.0,
+  1.0, 0.0,
+  1.0, 1.0,
+  0.0, 1.0,
+];
+
 txt_cube_mesh.vertex_colors = [];
-
-for (var i in colors) {
-    var color = colors[i];
-    for (var j=0; j < 4; j++) {
-        txt_cube_mesh.vertex_colors = txt_cube_mesh.vertex_colors.concat(color);
-    }
-}
-
 txt_cube_mesh.vertex_indices = [
    0,  1,  2,    0,  2,  3,
    4,  5,  6,    4,  6,  7,
@@ -63,5 +93,6 @@ txt_cube_mesh.vertex_indices = [
   20, 21, 22,   20, 22, 23
 ]
 
-txt_cube_mesh.position = [3, 0.0, 0.0];
+txt_cube_mesh.position = [0, 0.0, -5.0];
 txt_cube_mesh.scale = [1, 1, 1];
+txt_cube_mesh.texture_path = "test.jpg";

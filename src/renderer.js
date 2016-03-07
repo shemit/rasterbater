@@ -60,17 +60,43 @@ var Renderer = function(canvas) {
         this.gl.FLOAT
       );
 
-      var vert_color_buffer = new ColorBuffer(
-        this.gl,
-        mesh.vertex_colors
-      )
+      if (mesh.vertex_colors.length > 0) {
+        var vert_color_buffer = new ColorBuffer(
+          this.gl,
+          mesh.vertex_colors
+        )
 
-      vert_color_buffer.bind();
-      this.shaderManager.bind_buffer_to_attr(
-        vert_color_buffer,
-        "aVertexColor",
-        this.gl.FLOAT
-      );
+        vert_color_buffer.bind();
+        this.shaderManager.bind_buffer_to_attr(
+          vert_color_buffer,
+          "aVertexColor",
+          this.gl.FLOAT
+        );
+      }
+
+      if (mesh.texture_coords.length > 0) {
+
+        var txt_coord_buffer = new TextureCoordinateBuffer(
+          this.gl,
+          mesh.texture_coords
+        );
+        txt_coord_buffer.bind();
+
+        this.shaderManager.bind_buffer_to_attr(
+          txt_coord_buffer,
+          "aTextureCoord",
+          this.gl.FLOAT
+        );
+
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, mesh.texture);
+
+        var usampler = this.gl.getUniformLocation(
+          this.shaderManager.shaderProgram, 
+          "uSampler"
+        );
+        this.gl.uniform1i(usampler, 0);
+      }
 
       this.shaderManager.setMatrixUniforms(
         "uPMatrix",
@@ -97,6 +123,7 @@ var Renderer = function(canvas) {
           0
         );
       }
+
       // Handle meshes that don't include vertex_indices
       else {
         this.gl.drawArrays(
@@ -147,6 +174,7 @@ var Renderer = function(canvas) {
   this.handleLoadedTexture = function(texture) {
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
     this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
+
     this.gl.texImage2D(
       this.gl.TEXTURE_2D,
       0,
@@ -155,29 +183,32 @@ var Renderer = function(canvas) {
       this.gl.UNSIGNED_BYTE,
       texture.image
     );
+
     this.gl.texParameteri(
       this.gl.TEXTURE_2D,
-      this.gl.TEXTURE_MAC_FILTER,
+      this.gl.TEXTURE_MAG_FILTER,
       this.gl.NEAREST
     );
+
     this.gl.texParameteri(
       this.gl.TEXTURE_2D,
       this.gl.TEXTURE_MIN_FILTER,
       this.gl.NEAREST
     );
-    this.gl.bindTexture(this.GL.TEXTURE_2D, null);
+
+    this.gl.bindTexture(this.gl.TEXTURE_2D, null);
   }
   
   this.load = function() {
     for (mesh_key in this.meshes) {
       var mesh = this.meshes[mesh_key];
-      if (mesh.texture_path) {
-        mesh.texture = this.gl.createTexture;
-        mesh.texture.image = new Image();
-        mesh.texture.image.onload(function() {
-          this.handleLoadedTexture(mesh.texture);
-        });
 
+      if (mesh.texture_path) {
+        mesh.texture = this.gl.createTexture();
+        mesh.texture.image = new Image();
+        mesh.texture.image.onload = function() {
+          _this.handleLoadedTexture(mesh.texture);
+        }
         mesh.texture.image.src = mesh.texture_path;
       }
     }

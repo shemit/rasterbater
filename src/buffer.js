@@ -56,6 +56,27 @@ ColorBuffer.prototype = Object.create(Buffer.prototype);
 
 /* Inherit from Buffer */
 var TriangleBuffer = function(gl, vertices) {
-  Buffer.call(this, gl, vertices, 3, vertices.length/3, gl.ARRAY_BUFFER, Float32Array);
+  Buffer.call(
+    this,
+    gl,
+    vertices,
+    3,
+    vertices.length/3,
+    gl.ARRAY_BUFFER,
+    Float32Array
+  );
 }
 TriangleBuffer.prototype = Object.create(Buffer.prototype);
+
+var TextureCoordinateBuffer = function(gl, coords) {
+  Buffer.call(
+    this,
+    gl,
+    coords,
+    2,
+    coords.length/2,
+    gl.ARRAY_BUFFER,
+    Float32Array
+  );
+}
+TextureCoordinateBuffer.prototype = Object.create(Buffer.prototype);

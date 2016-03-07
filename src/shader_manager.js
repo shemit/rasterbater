@@ -50,10 +50,17 @@ var ShaderManager = function(gl) {
       )
     );
 
+    //this.gl.enableVertexAttribArray(
+    //  this.gl.getAttribLocation(
+    //    this.shaderProgram,
+    //    "aVertexColor"
+    //  )
+    //);
+
     this.gl.enableVertexAttribArray(
       this.gl.getAttribLocation(
         this.shaderProgram,
-        "aVertexColor"
+        "aTextureCoord"
       )
     );
   }

@@ -6,4 +6,5 @@ var Mesh = function() {
   this.position = [0, 0, 0];
   this.texture_path = null;
   this.texture = null;
+  this.texture_coords = [];
 }
