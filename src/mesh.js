@@ -7,4 +7,5 @@ var Mesh = function() {
   this.texture_path = null;
   this.texture = null;
   this.texture_coords = [];
+  this.rotation_velocity = [0, 0, 0];
 }
