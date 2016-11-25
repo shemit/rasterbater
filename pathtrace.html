@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script id="shader-fs" type="x-shader/x-fragment">
+void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
+
+}
+</script>
+<script id="shader-vs" type="x-shader/x-vertex"></script>
+<script src="src/shader_manager.js"></script>
+<script src="src/shader_compiler.js"></script>
+</head>
+<body>
+<canvas id="webgl-canvas" width="1000" height="600"></canvas>
+<script>
+  var shader_ids = ["shader-fs", "shader-vs"];
+  var canvas = document.getElementById("webgl-canvas");
+  var gl = canvas.getContext("experimental-webgl");
+  var shaderProgram = this.gl.createProgram();
+  var fragShader = document.getElementById("shader-fs");
+  
+
+</script>
+</body>
+</html>

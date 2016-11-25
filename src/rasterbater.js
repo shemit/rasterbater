@@ -1,6 +1,17 @@
 var grender = null;
+
 function go() {
   grender.start();
+}
+
+function handleKeyDown() {
+  console.log('hello world');
+  
+}
+
+function handleKeyUp() {
+  console.log('goodbye world');
+
 }
 
 function start () {
@@ -13,6 +24,9 @@ function start () {
   render.load();
   grender = render;
   window.setTimeout(go, 1000);
+
+  document.onkeydown = handleKeyDown;
+  document.onkeyup = handleKeyUp;
 
   // render.draw();
 

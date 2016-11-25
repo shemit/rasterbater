@@ -20,6 +20,7 @@ var Renderer = function(canvas) {
   this.projection_matrix = mat4.create();
   this.model_matrix = mat4.create();
   this.previous_tick_time = 0.0;
+  this.elapsed_time = 0.0;
 
   var _this = this;
 
@@ -36,6 +37,24 @@ var Renderer = function(canvas) {
     this.model_matrix = this.model_matrix_stack.pop();
   }
 
+  this.apply_rotation = function(x_rot, y_rot, z_rot) {
+      mat4.rotate(
+        this.model_matrix, 
+        RasterbaterMath.degrees_to_radians(x_rot), 
+        [1,0,0]
+      );
+      mat4.rotate(
+        this.model_matrix, 
+        RasterbaterMath.degrees_to_radians(y_rot), 
+        [0,1,0]
+      );
+      mat4.rotate(
+        this.model_matrix, 
+        RasterbaterMath.degrees_to_radians(z_rot), 
+        [0,0,1]
+      );
+  }
+
   this.draw_meshes = function() {
     for (m_key in this.meshes) {
       var mesh = this.meshes[m_key];
@@ -43,26 +62,17 @@ var Renderer = function(canvas) {
       mat4.translate(this.model_matrix, mesh.position);
       this.push_matrix();
 
-      mat4.rotate(
-        this.model_matrix, 
-        RasterbaterMath.degrees_to_radians(mesh.rotation[0]), 
-        [1,0,0]
-      );
-      mat4.rotate(
-        this.model_matrix, 
-        RasterbaterMath.degrees_to_radians(mesh.rotation[1]), 
-        [0,1,0]
-      );
-      mat4.rotate(
-        this.model_matrix, 
-        RasterbaterMath.degrees_to_radians(mesh.rotation[2]), 
-        [0,0,1]
+      this.apply_rotation(
+        mesh.rotation[0],
+        mesh.rotation[1],
+        mesh.rotation[2]
       );
 
       var vert_pos_buffer = new TriangleBuffer(
         this.gl,
         mesh.vertices
       );
+
       vert_pos_buffer.bind();
       this.shaderManager.bind_buffer_to_attr(
         vert_pos_buffer,
@@ -85,7 +95,6 @@ var Renderer = function(canvas) {
       }
 
       if (mesh.texture_coords.length > 0) {
-
         var txt_coord_buffer = new TextureCoordinateBuffer(
           this.gl,
           mesh.texture_coords
@@ -149,11 +158,11 @@ var Renderer = function(canvas) {
   this.animate = function() {
     var current_time = new Date().getTime();
     if (this.previous_tick_time != 0) {
-      var elapsed = current_time - this.previous_tick_time;
+      this.elapsed_time = current_time - this.previous_tick_time;
       for (m_key in this.meshes) {
         var mesh = this.meshes[m_key];
         for (var i = 0; i < mesh.rotation.length; i++) {
-          mesh.rotation[i] += (mesh.rotation_velocity[i] * elapsed) / 1000.0;
+          mesh.rotation[i] += (mesh.rotation_velocity[i] * this.elapsed_time) / 1000.0;
         }
       }
     }
@@ -223,6 +232,7 @@ var Renderer = function(canvas) {
         }
         mesh.texture.image.src = mesh.texture_path;
       }
+
     }
   }
 

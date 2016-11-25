@@ -32,7 +32,7 @@
 
       void main(void) {
           gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-          //vColor = aVertexColor;
+          vColor = aVertexColor;
           vTextureCoord = aTextureCoord;
       }
   </script>
@@ -55,7 +55,7 @@
   <script src="src/rasterbater.js"></script>
 </head>
 <body onload="start()">
-<canvas id="webgl-canvas" width="500" height="500"></canvas>
+<canvas id="webgl-canvas" width="1280" height="700"></canvas>
   
 </body>
 </html>
