@@ -98,3 +98,4 @@ txt_cube_mesh.scale = [1, 1, 1];
 txt_cube_mesh.texture_path = "test.jpg";
 txt_cube_mesh.rotation = [0, 0, 0];
 txt_cube_mesh.rotation_velocity = [90, 90, 90];
+

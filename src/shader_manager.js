@@ -1,6 +1,5 @@
 var ShaderManager = function(gl) {
   this.gl = gl;
-  this.shaderProgram = this.gl.createProgram();
   this.shaderCompiler = new ShaderCompiler(this.gl);
   this.shader_ids = [];
 
@@ -28,7 +27,46 @@ var ShaderManager = function(gl) {
     return shader_str_elem.type;
   }
 
-  this.setupShaders = function() {
+  this.useMaterial = function(material) {
+    this.gl.linkProgram(material.shaderProgram);
+    this.gl.useProgram(material.shaderProgram);
+
+    // This can be made generic so that we can assign any variable within
+    // the shader
+    this.gl.enableVertexAttribArray(
+      this.gl.getAttribLocation(
+        material.shaderProgram,
+        "aVertexPosition"
+      )
+    );
+
+    this.gl.enableVertexAttribArray(
+      this.gl.getAttribLocation(
+        material.shaderProgram,
+        "aTextureCoord"
+      )
+    );
+  }
+
+  this.setupShaders = function(material) {
+    material.shaderProgram = this.gl.createProgram();
+    material.compiledVertexShader = this.shaderCompiler.compile(
+        material.vertexShader,
+        'x-shader/x-vertex'
+      );
+
+    this.gl.attachShader(material.shaderProgram, material.compiledVertexShader);
+
+    material.compiledFragmentShader = this.shaderCompiler.compile(
+        material.fragmentShader,
+        'x-shader/x-fragment'
+      );
+    this.gl.attachShader(material.shaderProgram, material.compiledFragmentShader);
+
+  }
+  
+  /*
+  this.setupShaders = function(mesh) {
     for (shader_key in this.shader_ids) {
       var shader_id = this.shader_ids[shader_key];
       var shader_str = this.getShaderStrById(shader_id);
@@ -50,13 +88,6 @@ var ShaderManager = function(gl) {
       )
     );
 
-    //this.gl.enableVertexAttribArray(
-    //  this.gl.getAttribLocation(
-    //    this.shaderProgram,
-    //    "aVertexColor"
-    //  )
-    //);
-
     this.gl.enableVertexAttribArray(
       this.gl.getAttribLocation(
         this.shaderProgram,
@@ -64,12 +95,13 @@ var ShaderManager = function(gl) {
       )
     );
   }
+  */
 
-  this.bind_buffer_to_attr = function(buffer, attribute, type) {
+  this.bind_buffer_to_attr = function(buffer, attribute, type, shaderProgram) {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer.vertex_buffer);
 
     var vposition = this.gl.getAttribLocation(
-      this.shaderProgram,
+      shaderProgram,
       attribute
     )
 
@@ -84,9 +116,9 @@ var ShaderManager = function(gl) {
   }
 
   // Figure out how to make this non-dependent on the shader variable names
-  this.setMatrixUniforms = function(proj_name, proj_matrix) {
+  this.setMatrixUniforms = function(proj_name, proj_matrix, shaderProgram) {
     var pMatrixUniform = this.gl.getUniformLocation(
-      this.shaderProgram,
+      shaderProgram,
       proj_name
     );
 

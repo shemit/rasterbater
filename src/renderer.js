@@ -55,81 +55,94 @@ var Renderer = function(canvas) {
       );
   }
 
+  this.bind = function(elements, buffer_type, attr_name, attr_type, program) {
+    var buffers = {
+      "vec2_array": Vec2ArrayBuffer,
+      "vec3_array": Vec3ArrayBuffer,
+      "vec4_array": Vec4ArrayBuffer
+    };
+    var buffer = new buffers[buffer_type](
+      this.gl,
+      elements
+    );
+
+    buffer.bind();
+
+    this.shaderManager.bind_buffer_to_attr(
+      buffer,
+      attr_name,
+      attr_type,
+      program
+    );
+  }
+
   this.draw_meshes = function() {
     for (m_key in this.meshes) {
       var mesh = this.meshes[m_key];
 
+      this.shaderManager.useMaterial(mesh.material);
+
       mat4.translate(this.model_matrix, mesh.position);
       this.push_matrix();
 
+      /*
       this.apply_rotation(
         mesh.rotation[0],
         mesh.rotation[1],
         mesh.rotation[2]
       );
+      */
 
-      var vert_pos_buffer = new TriangleBuffer(
-        this.gl,
-        mesh.vertices
-      );
-
-      vert_pos_buffer.bind();
-      this.shaderManager.bind_buffer_to_attr(
-        vert_pos_buffer,
+      this.bind(
+        mesh.vertices, 
+        "vec3_array",
         "aVertexPosition",
-        this.gl.FLOAT
+        this.gl.FLOAT,
+        mesh.material.shaderProgram
+      );
+      this.bind(
+        mesh.vertex_colors, 
+        "vec4_array", 
+        "aVertexColor", 
+        this.gl.FLOAT,
+        mesh.material.shaderProgram
+      );
+      this.bind(
+        mesh.texture_coords,
+        "vec2_array",
+        "aTextureCoord",
+        this.gl.FLOAT,
+        mesh.material.shaderProgram
       );
 
-      if (mesh.vertex_colors.length > 0) {
-        var vert_color_buffer = new ColorBuffer(
-          this.gl,
-          mesh.vertex_colors
-        )
+      //==================== texture sample ========================//
 
-        vert_color_buffer.bind();
-        this.shaderManager.bind_buffer_to_attr(
-          vert_color_buffer,
-          "aVertexColor",
-          this.gl.FLOAT
-        );
-      }
+      this.gl.activeTexture(this.gl.TEXTURE0);
+      this.gl.bindTexture(this.gl.TEXTURE_2D, mesh.texture);
 
-      if (mesh.texture_coords.length > 0) {
-        var txt_coord_buffer = new TextureCoordinateBuffer(
-          this.gl,
-          mesh.texture_coords
-        );
-        txt_coord_buffer.bind();
+      var usampler = this.gl.getUniformLocation(
+        mesh.material.shaderProgram, 
+        "uSampler"
+      );
+      this.gl.uniform1i(usampler, 0);
 
-        this.shaderManager.bind_buffer_to_attr(
-          txt_coord_buffer,
-          "aTextureCoord",
-          this.gl.FLOAT
-        );
-
-        this.gl.activeTexture(this.gl.TEXTURE0);
-        this.gl.bindTexture(this.gl.TEXTURE_2D, mesh.texture);
-
-        var usampler = this.gl.getUniformLocation(
-          this.shaderManager.shaderProgram, 
-          "uSampler"
-        );
-        this.gl.uniform1i(usampler, 0);
-      }
+      //==================== texture sample ========================//
 
       this.shaderManager.setMatrixUniforms(
         "uPMatrix",
-        this.projection_matrix
+        this.projection_matrix,
+        mesh.material.shaderProgram
       );
 
       this.shaderManager.setMatrixUniforms(
         "uMVMatrix",
-        this.model_matrix
+        this.model_matrix,
+        mesh.material.shaderProgram
       );
 
       // Handle meshes that include vertex_indices
       if (mesh.vertex_indices) {
-        var vert_idx_buffer = new VertexIndexBuffer(
+        var vert_idx_buffer = new Vec1ArrayBuffer(
           this.gl,
           mesh.vertex_indices
         );
@@ -170,9 +183,13 @@ var Renderer = function(canvas) {
   }
 
   this.draw = function() {
+    this.viewport_width = this.canvas.width;
+    this.viewport_height = this.canvas.height;
+
     this.gl.viewport(0, 0, this.viewport_width, this.viewport_height);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
+    // Assign the projection matrix
     mat4.perspective(
       45, 
       this.viewport_width/this.viewport_height,
@@ -181,6 +198,7 @@ var Renderer = function(canvas) {
       this.projection_matrix
     )
 
+    // Set the world matrix to simply be the identity
     mat4.identity(this.model_matrix);
 
     this.draw_meshes();
@@ -223,6 +241,8 @@ var Renderer = function(canvas) {
   this.load = function() {
     for (mesh_key in this.meshes) {
       var mesh = this.meshes[mesh_key];
+      mesh.material.load();
+      this.shaderManager.setupShaders(mesh.material);
 
       if (mesh.texture_path) {
         mesh.texture = this.gl.createTexture();
@@ -237,7 +257,6 @@ var Renderer = function(canvas) {
   }
 
   this.start = function() {
-    this.shaderManager.setupShaders();
     this.tick();
   }
 }

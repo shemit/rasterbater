@@ -11,23 +11,35 @@ function handleKeyDown() {
 
 function handleKeyUp() {
   console.log('goodbye world');
-
 }
 
-function start () {
-  var shader_ids = ["shader-fs", "shader-vs"]
-  var canvas = document.getElementById("webgl-canvas");
-  var render = new Renderer(canvas);
+var render;
+function handleResize() {
+  render.canvas.width = document.body.offsetWidth;
+  render.canvas.height = document.body.offsetHeight;
+}
 
-  render.shaderManager.setShaderIds(shader_ids);
-  render.meshes = [txt_cube_mesh];
+
+function start () {
+  var canvas = document.getElementById("webgl-canvas");
+  render = new Renderer(canvas);
+  handleResize();
+
+  var mtl = new Material();
+  mtl.vertexShaderSrc = "shaders/main.vs";
+  mtl.fragmentShaderSrc = "shaders/main.fs";
+
+  var mesh = txt_cube_mesh;
+  mesh.material = mtl;
+
+  render.meshes = [mesh];
+
   render.load();
   grender = render;
+  
   window.setTimeout(go, 1000);
 
   document.onkeydown = handleKeyDown;
   document.onkeyup = handleKeyUp;
-
-  // render.draw();
-
+  window.onresize = handleResize;
 }

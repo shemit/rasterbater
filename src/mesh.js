@@ -8,4 +8,5 @@ var Mesh = function() {
   this.texture = null;
   this.texture_coords = [];
   this.rotation_velocity = [0, 0, 0];
+  this.material = new Material();
 }

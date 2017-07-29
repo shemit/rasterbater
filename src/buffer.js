@@ -1,6 +1,6 @@
 var Buffer = function(
     gl, 
-    vertices,
+    elements,
     item_size,
     num_items,
     buffer_type, 
@@ -8,7 +8,7 @@ var Buffer = function(
   ) {
   this.gl = gl;
   this.vertex_buffer = gl.createBuffer();
-  this.vertices = vertices;
+  this.elements = elements;
   this.item_size = item_size;
   this.num_items = num_items;
   this.type = buffer_type;
@@ -19,12 +19,12 @@ Buffer.prototype.bind = function() {
   this.gl.bindBuffer(this.type, this.vertex_buffer);
   this.gl.bufferData(
     this.type,
-    new this.prim_type(this.vertices),
+    new this.prim_type(this.elements),
     this.gl.STATIC_DRAW
   )
 }
 
-var VertexIndexBuffer = function(
+var Vec1ArrayBuffer = function(
     gl,
     indices
   ) {
@@ -39,36 +39,9 @@ var VertexIndexBuffer = function(
     Uint16Array
   );
 }
-VertexIndexBuffer.prototype = Object.create(Buffer.prototype);
+Vec1ArrayBuffer.prototype = Object.create(Buffer.prototype);
 
-var ColorBuffer = function(gl, colors) {
-  Buffer.call(
-    this,
-    gl,
-    colors,
-    4,
-    colors.length/4,
-    gl.ARRAY_BUFFER,
-    Float32Array
-  );
-}
-ColorBuffer.prototype = Object.create(Buffer.prototype);
-
-/* Inherit from Buffer */
-var TriangleBuffer = function(gl, vertices) {
-  Buffer.call(
-    this,
-    gl,
-    vertices,
-    3,
-    vertices.length/3,
-    gl.ARRAY_BUFFER,
-    Float32Array
-  );
-}
-TriangleBuffer.prototype = Object.create(Buffer.prototype);
-
-var TextureCoordinateBuffer = function(gl, coords) {
+var Vec2ArrayBuffer = function(gl, coords) {
   Buffer.call(
     this,
     gl,
@@ -79,4 +52,47 @@ var TextureCoordinateBuffer = function(gl, coords) {
     Float32Array
   );
 }
-TextureCoordinateBuffer.prototype = Object.create(Buffer.prototype);
+Vec2ArrayBuffer.prototype = Object.create(Buffer.prototype);
+
+var Vec3ArrayBuffer = function(gl, vertices) {
+  Buffer.call(
+    this,
+    gl,
+    vertices,
+    3,
+    vertices.length/3,
+    gl.ARRAY_BUFFER,
+    Float32Array
+  );
+}
+Vec3ArrayBuffer.prototype = Object.create(Buffer.prototype);
+
+var Vec4ArrayBuffer = function(gl, colors) {
+  Buffer.call(
+    this,
+    gl,
+    colors,
+    4,
+    colors.length/4,
+    gl.ARRAY_BUFFER,
+    Float32Array
+  );
+}
+Vec4ArrayBuffer.prototype = Object.create(Buffer.prototype);
+
+var TextureBuffer = function(gl, texture) {
+  Buffer.call(
+    this,
+    gl,
+    colors,
+    4,
+    colors.length/4,
+    gl.ARRAY_BUFFER,
+    Float32Array
+  );
+}
+TextureBuffer.prototype = Object.create(Buffer.prototype);
+
+TextureBuffer.prototype.bind = function() {
+}
+
