@@ -85,13 +85,11 @@ var Renderer = function(canvas) {
       mat4.translate(this.model_matrix, mesh.position);
       this.push_matrix();
 
-      /*
       this.apply_rotation(
         mesh.rotation[0],
         mesh.rotation[1],
         mesh.rotation[2]
       );
-      */
 
       this.bind(
         mesh.vertices, 
